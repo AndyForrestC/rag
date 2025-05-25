@@ -31,13 +31,13 @@ def test_chat_endpoint_exists(client):
 
 class TestInferenceService:
     """Test suite for inference service functionality"""
-    
+
     def test_chat_message_validation(self, client):
         """Test chat message validation"""
         # Test with empty message
         response = client.post("/api/chat", json={"message": ""})
         assert response.status_code in [400, 422]
-    
+
     def test_chat_message_format(self, client):
         """Test chat message format validation"""
         # Test with invalid JSON format

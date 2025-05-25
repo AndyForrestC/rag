@@ -29,6 +29,7 @@ if environment == "dev":
 
 app.include_router(chat_router, prefix="/api/chat")
 
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring"""

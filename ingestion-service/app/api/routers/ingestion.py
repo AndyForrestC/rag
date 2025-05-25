@@ -3,6 +3,7 @@ from app.engine.generate import generate_datasource
 
 ingestion_router = r = APIRouter()
 
+
 @r.post("/upload")
 def ingestion(file: UploadFile = File(...)):
     """Upload and process a file for ingestion into the vector database"""

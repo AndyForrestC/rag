@@ -7,9 +7,11 @@ from nemoguardrails import LLMRails, RailsConfig
 
 chat_router = r = APIRouter()
 
+
 class _Message(BaseModel):
     role: MessageRole
     content: str
+
 
 class _ChatData(BaseModel):
     messages: List[_Message]

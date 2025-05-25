@@ -26,10 +26,10 @@ def generate_datasource():
         milvus_uri = os.getenv("MILVUS_URI")
         milvus_api_key = os.getenv("MILVUS_API_KEY")
         milvus_collection = os.getenv("MILVUS_COLLECTION")
-        milvus_dimension = int(os.getenv("MILVUS_DIMENSION"))
+        milvus_dimension = int(os.getenv("MILVUS_DIMENSION", "1536"))  # Default to 1536
 
-        if not all([milvus_uri, milvus_api_key, milvus_collection, milvus_dimension]):
-            raise ValueError("Missing required environment variables.")
+        if not all([milvus_uri, milvus_api_key, milvus_collection]):
+            raise ValueError("Missing required environment variables: MILVUS_URI, MILVUS_API_KEY, or MILVUS_COLLECTION.")
 
         # Create MilvusVectorStore 
         vector_store = MilvusVectorStore(

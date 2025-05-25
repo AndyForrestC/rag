@@ -18,6 +18,8 @@ llama-index = "^0.10.0"
 llama-index-vector-stores-milvus = "^0.1.0"
 pymilvus = "^2.3.6"
 pyarrow = "^12.0.0"
+httpx = "^0.25.0,<0.27.0"
+python-multipart = "^0.0.20"
 
 [tool.poetry.dependencies.uvicorn]
 extras = [ "standard" ]

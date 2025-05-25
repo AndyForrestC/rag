@@ -25,5 +25,10 @@ if environment == "dev":
 
 app.include_router(ingestion_router, prefix="/api/ingestion")
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {"status": "healthy"}
+
 if __name__ == "__main__":
     uvicorn.run(app="main:app", host="0.0.0.0", reload=True)

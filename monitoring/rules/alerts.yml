@@ -1,0 +1,127 @@
+groups:
+- name: rag-microservices
+  rules:
+  
+  # Service availability alerts
+  - alert: ServiceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Service {{ $labels.instance }} is down"
+      description: "Service {{ $labels.instance }} has been down for more than 1 minute."
+
+  # High error rate alerts
+  - alert: HighErrorRate
+    expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High error rate on {{ $labels.instance }}"
+      description: "Error rate is above 10% for {{ $labels.instance }}"
+
+  - alert: CriticalErrorRate
+    expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.3
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Critical error rate on {{ $labels.instance }}"
+      description: "Error rate is above 30% for {{ $labels.instance }}"
+
+  # Response time alerts
+  - alert: HighResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High response time on {{ $labels.instance }}"
+      description: "95th percentile response time is above 2 seconds"
+
+  - alert: VeryHighResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+    for: 2m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Very high response time on {{ $labels.instance }}"
+      description: "95th percentile response time is above 5 seconds"
+
+  # Resource usage alerts
+  - alert: HighMemoryUsage
+    expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High memory usage on {{ $labels.container_name }}"
+      description: "Memory usage is above 80%"
+
+  - alert: HighCPUUsage
+    expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High CPU usage on {{ $labels.container_name }}"
+      description: "CPU usage is above 80%"
+
+  # Disk space alerts
+  - alert: LowDiskSpace
+    expr: (node_filesystem_free_bytes / node_filesystem_size_bytes) < 0.1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low disk space on {{ $labels.instance }}"
+      description: "Disk space is below 10%"
+
+  - alert: CriticalDiskSpace
+    expr: (node_filesystem_free_bytes / node_filesystem_size_bytes) < 0.05
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Critical disk space on {{ $labels.instance }}"
+      description: "Disk space is below 5%"
+
+  # Milvus specific alerts
+  - alert: MilvusConnectionFailure
+    expr: milvus_connection_status == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Milvus connection failure"
+      description: "Cannot connect to Milvus database"
+
+  - alert: HighVectorSearchLatency
+    expr: milvus_search_latency_seconds > 1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High vector search latency"
+      description: "Vector search taking more than 1 second"
+
+  # Custom RAG metrics
+  - alert: LowDocumentProcessingRate
+    expr: rate(documents_processed_total[5m]) < 1
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Low document processing rate"
+      description: "Document processing rate is below 1 per 5 minutes"
+
+  - alert: RAGQueryFailures
+    expr: rate(rag_query_failures_total[5m]) > 0.1
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "RAG query failures detected"
+      description: "RAG query failure rate is above 10%"

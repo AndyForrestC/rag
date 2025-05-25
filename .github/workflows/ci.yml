@@ -1,0 +1,279 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # 测试和构建 ingestion-service
+  test-ingestion-service:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: ingestion-service/.venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      working-directory: ./ingestion-service
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      working-directory: ./ingestion-service
+      run: poetry install --no-interaction
+    
+    - name: Run tests
+      working-directory: ./ingestion-service
+      run: |
+        poetry run pytest tests/ -v --cov --cov-report=xml
+    
+    - name: Run linting
+      working-directory: ./ingestion-service
+      run: |
+        poetry run black --check .
+        poetry run flake8 .
+        poetry run mypy .
+    
+    - name: Check security vulnerabilities
+      working-directory: ./ingestion-service
+      run: |
+        poetry run safety check
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./ingestion-service/coverage.xml
+        flags: ingestion-service
+
+  # 测试和构建 inference-service backend
+  test-inference-backend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
+      uses: actions/cache@v3
+      with:
+        path: inference-service/backend/.venv
+        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      working-directory: ./inference-service/backend
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      working-directory: ./inference-service/backend
+      run: poetry install --no-interaction
+    
+    - name: Run tests
+      working-directory: ./inference-service/backend
+      run: |
+        poetry run pytest tests/ -v --cov --cov-report=xml
+    
+    - name: Run linting
+      working-directory: ./inference-service/backend
+      run: |
+        poetry run black --check .
+        poetry run flake8 .
+        poetry run mypy .
+    
+    - name: Check security vulnerabilities
+      working-directory: ./inference-service/backend
+      run: |
+        poetry run safety check
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./inference-service/backend/coverage.xml
+        flags: inference-backend
+
+  # 测试和构建 inference-service frontend
+  test-inference-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: inference-service/frontend/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./inference-service/frontend
+      run: npm ci
+    
+    - name: Run linting
+      working-directory: ./inference-service/frontend
+      run: npm run lint
+    
+    - name: Run type checking
+      working-directory: ./inference-service/frontend
+      run: npx tsc --noEmit
+    
+    - name: Build application
+      working-directory: ./inference-service/frontend
+      run: npm run build
+    
+    - name: Run tests
+      working-directory: ./inference-service/frontend
+      run: npm test -- --coverage --watchAll=false
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./inference-service/frontend/coverage/lcov.info
+        flags: inference-frontend
+
+  # 代码质量检查
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # 集成测试
+  integration-tests:
+    needs: [test-ingestion-service, test-inference-backend, test-inference-frontend]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Start test environment
+      run: |
+        docker-compose -f docker-compose.test.yml up -d
+        sleep 30  # Wait for services to be ready
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install test dependencies
+      run: |
+        pip install pytest requests
+    
+    - name: Run integration tests
+      run: |
+        pytest tests/integration/ -v
+    
+    - name: Stop test environment
+      if: always()
+      run: |
+        docker-compose -f docker-compose.test.yml down
+
+  # Docker 构建测试
+  docker-build-test:
+    needs: [test-ingestion-service, test-inference-backend, test-inference-frontend]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Build ingestion-service Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./ingestion-service
+        file: ./ingestion-service/Dockerfile
+        push: false
+        tags: rag-ingestion-service:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build inference-service backend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./inference-service/backend
+        file: ./inference-service/backend/Dockerfile
+        push: false
+        tags: rag-inference-backend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build inference-service frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./inference-service/frontend
+        file: ./inference-service/frontend/Dockerfile
+        push: false
+        tags: rag-inference-frontend:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  # CI 状态汇总
+  ci-success:
+    needs: [test-ingestion-service, test-inference-backend, test-inference-frontend, code-quality, integration-tests, docker-build-test]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Check CI status
+      run: |
+        if [[ "${{ needs.test-ingestion-service.result }}" == "success" && \
+              "${{ needs.test-inference-backend.result }}" == "success" && \
+              "${{ needs.test-inference-frontend.result }}" == "success" && \
+              "${{ needs.code-quality.result }}" == "success" && \
+              "${{ needs.integration-tests.result }}" == "success" && \
+              "${{ needs.docker-build-test.result }}" == "success" ]]; then
+          echo "✅ All CI checks passed successfully!"
+          exit 0
+        else
+          echo "❌ Some CI checks failed!"
+          exit 1
+        fi

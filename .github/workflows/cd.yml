@@ -1,0 +1,307 @@
+name: Continuous Deployment
+
+on:
+  workflow_run:
+    workflows: ["Continuous Integration"]
+    types:
+      - completed
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      force_deploy:
+        description: 'Force deployment even if CI failed'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # 检查 CI 状态
+  check-ci-status:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event.inputs.force_deploy == 'true'
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    
+    steps:
+    - name: Check CI status
+      id: check
+      run: |
+        if [[ "${{ github.event.workflow_run.conclusion }}" == "success" || "${{ github.event.inputs.force_deploy }}" == "true" ]]; then
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ CI passed or force deploy enabled. Proceeding with deployment."
+        else
+          echo "should_deploy=false" >> $GITHUB_OUTPUT
+          echo "❌ CI failed and force deploy not enabled. Skipping deployment."
+        fi
+
+  # Docker 构建和推送
+  build-and-push:
+    needs: check-ci-status
+    runs-on: ubuntu-latest
+    if: needs.check-ci-status.outputs.should_deploy == 'true'
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+    
+    - name: Generate image tag
+      id: tag
+      run: |
+        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          TAG="${{ github.sha }}"
+        else
+          TAG="${{ github.event.workflow_run.head_sha }}"
+        fi
+        echo "tag=${TAG}" >> $GITHUB_OUTPUT
+        echo "Using tag: ${TAG}"
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push ingestion-service
+      uses: docker/build-push-action@v5
+      with:
+        context: ./ingestion-service
+        file: ./ingestion-service/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/rag-ingestion-service:latest
+          ${{ secrets.DOCKER_USERNAME }}/rag-ingestion-service:${{ steps.tag.outputs.tag }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Build and push inference-service backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./inference-service/backend
+        file: ./inference-service/backend/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/rag-inference-backend:latest
+          ${{ secrets.DOCKER_USERNAME }}/rag-inference-backend:${{ steps.tag.outputs.tag }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Build and push inference-service frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./inference-service/frontend
+        file: ./inference-service/frontend/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/rag-inference-frontend:latest
+          ${{ secrets.DOCKER_USERNAME }}/rag-inference-frontend:${{ steps.tag.outputs.tag }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+  # 部署到 staging 环境
+  deploy-staging:
+    needs: [check-ci-status, build-and-push]
+    runs-on: ubuntu-latest
+    if: needs.check-ci-status.outputs.should_deploy == 'true' && (github.event.inputs.environment == 'staging' || github.event.inputs.environment == '' || github.event_name == 'workflow_run')
+    environment: 
+      name: staging
+      url: https://staging.rag.yourdomain.com
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        kubectl config current-context
+    
+    - name: Update image tags for staging
+      run: |
+        IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+        sed -i "s|image: .*/rag-ingestion-service:.*|image: ${{ secrets.DOCKER_USERNAME }}/rag-ingestion-service:${IMAGE_TAG}|g" k8s/ingestion-service.yaml
+        sed -i "s|image: .*/rag-inference-backend:.*|image: ${{ secrets.DOCKER_USERNAME }}/rag-inference-backend:${IMAGE_TAG}|g" k8s/inference-service.yaml
+        sed -i "s|image: .*/rag-inference-frontend:.*|image: ${{ secrets.DOCKER_USERNAME }}/rag-inference-frontend:${IMAGE_TAG}|g" k8s/inference-service.yaml
+    
+    - name: Deploy to staging
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f k8s/ -n rag-staging
+        kubectl rollout status deployment/ingestion-service -n rag-staging --timeout=300s
+        kubectl rollout status deployment/inference-backend -n rag-staging --timeout=300s
+        kubectl rollout status deployment/inference-frontend -n rag-staging --timeout=300s
+    
+    - name: Run smoke tests
+      run: |
+        echo "Running smoke tests against staging environment..."
+        sleep 30  # Wait for services to be ready
+        curl -f https://staging.rag.yourdomain.com/health || exit 1
+        curl -f https://staging.rag.yourdomain.com/api/health || exit 1
+        echo "✅ Smoke tests passed!"
+    
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "✅ Successfully deployed to staging environment"
+        echo "🔗 Environment URL: https://staging.rag.yourdomain.com"
+
+  # 部署到 production 环境（需要审批）
+  deploy-production:
+    needs: [check-ci-status, build-and-push, deploy-staging]
+    runs-on: ubuntu-latest
+    if: needs.check-ci-status.outputs.should_deploy == 'true' && (github.event.inputs.environment == 'production' || (github.event_name == 'workflow_run' && github.ref == 'refs/heads/main'))
+    environment: 
+      name: production
+      url: https://rag.yourdomain.com
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+        kubectl config current-context
+    
+    - name: Update image tags for production
+      run: |
+        IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+        sed -i "s|image: .*/rag-ingestion-service:.*|image: ${{ secrets.DOCKER_USERNAME }}/rag-ingestion-service:${IMAGE_TAG}|g" k8s/ingestion-service.yaml
+        sed -i "s|image: .*/rag-inference-backend:.*|image: ${{ secrets.DOCKER_USERNAME }}/rag-inference-backend:${IMAGE_TAG}|g" k8s/inference-service.yaml
+        sed -i "s|image: .*/rag-inference-frontend:.*|image: ${{ secrets.DOCKER_USERNAME }}/rag-inference-frontend:${IMAGE_TAG}|g" k8s/inference-service.yaml
+    
+    - name: Create backup of current deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl get deployment ingestion-service -n rag-production -o yaml > backup-ingestion-service.yaml
+        kubectl get deployment inference-backend -n rag-production -o yaml > backup-inference-backend.yaml
+        kubectl get deployment inference-frontend -n rag-production -o yaml > backup-inference-frontend.yaml
+    
+    - name: Deploy to production with rolling update
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f k8s/ -n rag-production
+        kubectl rollout status deployment/ingestion-service -n rag-production --timeout=600s
+        kubectl rollout status deployment/inference-backend -n rag-production --timeout=600s
+        kubectl rollout status deployment/inference-frontend -n rag-production --timeout=600s
+    
+    - name: Run production health checks
+      run: |
+        echo "Running production health checks..."
+        sleep 60  # Wait for services to be ready
+        curl -f https://rag.yourdomain.com/health || exit 1
+        curl -f https://rag.yourdomain.com/api/health || exit 1
+        echo "✅ Production health checks passed!"
+    
+    - name: Run production smoke tests
+      run: |
+        echo "Running production smoke tests..."
+        # Add more comprehensive tests here
+        curl -f https://rag.yourdomain.com/ || exit 1
+        echo "✅ Production smoke tests passed!"
+    
+    - name: Archive backup files
+      uses: actions/upload-artifact@v3
+      with:
+        name: production-backup-${{ github.sha }}
+        path: backup-*.yaml
+        retention-days: 30
+    
+    - name: Notify deployment success
+      if: success()
+      run: |
+        echo "✅ Successfully deployed to production environment"
+        echo "🔗 Environment URL: https://rag.yourdomain.com"
+
+  # 回滚功能
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure() && (github.event.inputs.environment == 'production')
+    needs: [deploy-production]
+    environment: production
+    
+    steps:
+    - name: Download backup files
+      uses: actions/download-artifact@v3
+      with:
+        name: production-backup-${{ github.sha }}
+    
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+    
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+    
+    - name: Rollback production deployment
+      run: |
+        export KUBECONFIG=kubeconfig
+        kubectl apply -f backup-ingestion-service.yaml -n rag-production
+        kubectl apply -f backup-inference-backend.yaml -n rag-production
+        kubectl apply -f backup-inference-frontend.yaml -n rag-production
+        kubectl rollout status deployment/ingestion-service -n rag-production --timeout=300s
+        kubectl rollout status deployment/inference-backend -n rag-production --timeout=300s
+        kubectl rollout status deployment/inference-frontend -n rag-production --timeout=300s
+    
+    - name: Verify rollback
+      run: |
+        echo "Verifying rollback..."
+        sleep 30
+        curl -f https://rag.yourdomain.com/health || exit 1
+        echo "✅ Rollback completed successfully!"
+
+  # 部署状态通知
+  notify-deployment:
+    needs: [deploy-staging, deploy-production]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify Slack
+      if: always()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_CHANNEL: '#deployments'
+        SLACK_USERNAME: 'GitHub Actions'
+        SLACK_ICON: https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png
+        SLACK_TITLE: 'RAG Microservices Deployment'
+        SLACK_MESSAGE: |
+          Environment: ${{ github.event.inputs.environment || 'staging' }}
+          Status: ${{ job.status }}
+          Commit: ${{ github.event.workflow_run.head_sha || github.sha }}
+          Actor: ${{ github.actor }}
+        SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}

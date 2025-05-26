@@ -11,9 +11,6 @@ export interface Message {
 
 export default function ChatMessages({
   messages,
-  isLoading,
-  reload,
-  stop,
 }: {
   messages: Message[];
   isLoading?: boolean;

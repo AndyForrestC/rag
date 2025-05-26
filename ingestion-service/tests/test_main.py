@@ -40,9 +40,7 @@ class TestIngestionService:
         # Test with invalid file type
         response = client.post(
             "/api/ingestion/upload",
-            files={
-                "file": ("test.exe", "malicious content", "application/exe")
-            },
+            files={"file": ("test.exe", "malicious content", "application/exe")},
         )
         assert response.status_code in [400, 422]
 

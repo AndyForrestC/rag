@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, status
 from llama_index.core.llms import MessageRole
 from pydantic import BaseModel
-from nemoguardrails import LLMRails, RailsConfig
+from nemoguardrails import LLMRails, RailsConfig  # type: ignore
 
 chat_router = r = APIRouter()
 

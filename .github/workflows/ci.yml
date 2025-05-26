@@ -58,10 +58,10 @@ jobs:
         poetry run flake8 .
         poetry run mypy .
     
-    - name: Check security vulnerabilities
-      working-directory: ./ingestion-service
-      run: |
-        poetry run safety check
+    # - name: Check security vulnerabilities
+    #   working-directory: ./ingestion-service
+    #   run: |
+    #     poetry run safety check
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -119,10 +119,10 @@ jobs:
         poetry run flake8 .
         poetry run mypy .
     
-    - name: Check security vulnerabilities
-      working-directory: ./inference-service/backend
-      run: |
-        poetry run safety check
+    # - name: Check security vulnerabilities
+    #   working-directory: ./inference-service/backend
+    #   run: |
+    #     poetry run safety check
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3

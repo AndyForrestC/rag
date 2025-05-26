@@ -1,13 +1,14 @@
-from dotenv import load_dotenv
-
-load_dotenv()
-
 import logging
-import os, sys
+import os
+import sys
 import uvicorn
-from app.api.routers.chat import chat_router
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.routers.chat import chat_router
+
+load_dotenv()
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 

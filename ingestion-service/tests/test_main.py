@@ -6,7 +6,7 @@ import os
 # Add the parent directory to the Python path so we can import main
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from main import app
+from main import app  # noqa: E402
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def test_ingestion_endpoint_exists(client):
         "/api/ingestion/upload",
         files={"file": ("test.txt", "test content", "text/plain")},
     )
-    # The endpoint should exist even if it returns an error due to missing dependencies
+    # The endpoint should exist even if it returns an error due to missing deps
     assert response.status_code in [200, 400, 422, 500]
 
 
@@ -40,13 +40,16 @@ class TestIngestionService:
         # Test with invalid file type
         response = client.post(
             "/api/ingestion/upload",
-            files={"file": ("test.exe", "malicious content", "application/exe")},
+            files={
+                "file": ("test.exe", "malicious content", "application/exe")
+            },
         )
         assert response.status_code in [400, 422]
 
     def test_empty_file_upload(self, client):
         """Test empty file upload"""
         response = client.post(
-            "/api/ingestion/upload", files={"file": ("empty.txt", "", "text/plain")}
+            "/api/ingestion/upload",
+            files={"file": ("empty.txt", "", "text/plain")},
         )
         assert response.status_code in [400, 422]

@@ -1,5 +1,5 @@
-import logging, os
-import pymilvus
+import logging
+import os
 from dotenv import load_dotenv
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext
 from llama_index.llms.openai import OpenAI
@@ -26,7 +26,8 @@ def generate_datasource():
 
         if not all([milvus_uri, milvus_api_key, milvus_collection]):
             raise ValueError(
-                "Missing required environment variables: MILVUS_URI, MILVUS_API_KEY, or MILVUS_COLLECTION."
+                "Missing required environment variables: "
+                "MILVUS_URI, MILVUS_API_KEY, or MILVUS_COLLECTION."
             )
 
         # Create MilvusVectorStore
@@ -50,7 +51,7 @@ def generate_datasource():
 
         documents = SimpleDirectoryReader("data").load_data()
         nodes = node_parser.get_nodes_from_documents(documents)
-        index = VectorStoreIndex(
+        VectorStoreIndex(
             nodes, storage_context=storage_context, embed_model=embed_model
         )
 

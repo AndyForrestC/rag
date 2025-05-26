@@ -1,6 +1,4 @@
-import logging
 import os
-import pymilvus
 
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex

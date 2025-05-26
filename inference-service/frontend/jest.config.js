@@ -20,6 +20,15 @@ const customJestConfig = {
       useESM: true,
     },
   },
+  // Configure module path ignore patterns to avoid Haste conflicts
+  modulePathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/node_modules/.pnpm/',
+  ],
+  // Configure Haste map ignore patterns
+  haste: {
+    forceNodeFilesystemAPI: true,
+  },
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

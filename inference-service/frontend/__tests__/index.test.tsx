@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import { act } from 'react'
 import Home from '../app/page'
 
 jest.mock('../app/components/header', () => {
@@ -16,9 +15,7 @@ jest.mock('../app/components/chat-section', () => {
 
 describe('Home', () => {
   it('renders the main page components', () => {
-    act(() => {
-      render(<Home />)
-    })
+    render(<Home />)
 
     expect(screen.getByTestId('header')).toBeInTheDocument()
     expect(screen.getByTestId('chat-section')).toBeInTheDocument()

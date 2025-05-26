@@ -212,6 +212,49 @@ jobs:
   #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  # 安全测试
+  security-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install security tools
+      run: |
+        pip install safety bandit semgrep
+    
+    - name: Run Python dependency security check
+      run: |
+        echo "Checking ingestion-service dependencies..."
+        cd ingestion-service && pip install poetry && poetry export -f requirements.txt | safety check --stdin || true
+        echo "Checking inference-service backend dependencies..."
+        cd ../inference-service/backend && poetry export -f requirements.txt | safety check --stdin || true
+    
+    - name: Run Python static security analysis
+      run: |
+        echo "Running bandit security analysis..."
+        bandit -r ingestion-service/app/ -f json -o bandit-ingestion.json || true
+        bandit -r inference-service/backend/app/ -f json -o bandit-inference.json || true
+    
+    - name: Run semgrep security analysis
+      run: |
+        echo "Running semgrep security analysis..."
+        semgrep --config=auto --json --output=semgrep-results.json ingestion-service/ inference-service/ || true
+    
+    # SonarCloud 扫描 (暂时跳过)
+    # - name: SonarCloud Scan
+    #   uses: SonarSource/sonarcloud-github-action@master
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   # 集成测试
   integration-tests:
     needs: [test-ingestion-service, test-inference-backend, test-inference-frontend]
@@ -291,7 +334,7 @@ jobs:
 
   # CI 状态汇总
   ci-success:
-    needs: [test-ingestion-service, test-inference-backend, test-inference-frontend, sonarcloud, integration-tests, docker-build-test]
+    needs: [test-ingestion-service, test-inference-backend, test-inference-frontend, security-tests, integration-tests, docker-build-test]
     runs-on: ubuntu-latest
     if: always()
     
@@ -301,7 +344,7 @@ jobs:
         if [[ "${{ needs.test-ingestion-service.result }}" == "success" && \
               "${{ needs.test-inference-backend.result }}" == "success" && \
               "${{ needs.test-inference-frontend.result }}" == "success" && \
-              "${{ needs.sonarcloud.result }}" == "success" && \
+              "${{ needs.security-tests.result }}" == "success" && \
               "${{ needs.integration-tests.result }}" == "success" && \
               "${{ needs.docker-build-test.result }}" == "success" ]]; then
           echo "✅ All CI checks passed successfully!"

@@ -179,19 +179,11 @@ jobs:
       with:
         fetch-depth: 0
     
-    # TODO: 需要仓库所有者配置 SONAR_TOKEN
-    # SonarCloud 扫描需要在 GitHub Settings → Secrets 中配置 SONAR_TOKEN
-    # - name: SonarCloud Scan
-    #   uses: SonarSource/sonarcloud-github-action@master
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    
-    - name: Code quality check placeholder
-      run: |
-        echo "✅ 代码质量检查步骤已跳过"
-        echo "📋 需要配置 SonarCloud token 以启用代码质量扫描"
-        echo "🔗 配置指南: https://docs.sonarcloud.io/getting-started/github/"
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # 集成测试
   integration-tests:

@@ -30,7 +30,7 @@ jobs:
 
     - name: Start services for testing
       run: |
-        docker-compose up -d
+        docker compose up -d
         sleep 60  # Wait for services to be ready
 
     - name: Run load test - Chat API
@@ -76,4 +76,4 @@ jobs:
 
     - name: Cleanup
       if: always()
-      run: docker-compose down -v
+      run: docker compose down -v

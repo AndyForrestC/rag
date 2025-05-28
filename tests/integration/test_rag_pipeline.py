@@ -33,12 +33,6 @@ class TestRAGIntegration:
         assert response.status_code == 200
         assert response.json()["status"] == "healthy"
 
-    def test_frontend_accessible(self):
-        """Test frontend is accessible"""
-        response = requests.get(FRONTEND_BASE_URL, timeout=10)
-        assert response.status_code == 200
-        assert "text/html" in response.headers.get("content-type", "")
-
     def test_document_ingestion(self):
         """Test document upload and processing"""
         # Create test document

@@ -6,14 +6,25 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8001:8000"
-    env_file:
-      - ./ingestion-service/.env
+    environment:
+      - MODEL=${MODEL:-gpt-3.5-turbo-0125}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MILVUS_API_KEY=${MILVUS_API_KEY}
+      - MILVUS_URI=${MILVUS_URI}
+      - MILVUS_COLLECTION=${MILVUS_COLLECTION:-rag}
+      - MILVUS_DIMENSION=${MILVUS_DIMENSION:-1536}
+      - COHERE_API_KEY=${COHERE_API_KEY}
     volumes:
       - ./ingestion-service:/app
       - ./data:/app/data # Mount local data folder
     networks:
       - rag_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # RAG Inference Service Backend
   inference-backend:
@@ -24,11 +35,24 @@ services:
       - "8000:8000"
     env_file:
       - ./inference-service/backend/.env
+    environment:
+      - MODEL=${MODEL:-gpt-3.5-turbo-0125}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MILVUS_API_KEY=${MILVUS_API_KEY}
+      - MILVUS_URI=${MILVUS_URI}
+      - MILVUS_COLLECTION=${MILVUS_COLLECTION:-rag}
+      - MILVUS_DIMENSION=${MILVUS_DIMENSION:-1536}
+      - COHERE_API_KEY=${COHERE_API_KEY}
     volumes:
       - ./inference-service/backend:/app
     networks:
       - rag_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # RAG Inference Service Frontend
   inference-frontend:
@@ -39,9 +63,20 @@ services:
       - "3000:3000"
     env_file:
       - ./inference-service/frontend/.env
+    environment:
+      - MODEL=${MODEL:-gpt-3.5-turbo-0125}
+      - NEXT_PUBLIC_MODEL=${NEXT_PUBLIC_MODEL:-gpt-3.5-turbo-0125}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    volumes:
+      - ./inference-service/frontend:/app
     networks:
       - rag_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # redis: # Keep redis if it's used by services independently of Milvus
   #   image: redis:7-alpine

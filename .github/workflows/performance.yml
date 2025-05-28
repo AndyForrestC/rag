@@ -29,6 +29,14 @@ jobs:
         sudo apt-get install k6
 
     - name: Start services for testing
+      env:
+        MODEL: gpt-3.5-turbo-0125
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        MILVUS_API_KEY: ${{ secrets.MILVUS_API_KEY }}
+        MILVUS_URI: ${{ secrets.MILVUS_URI }}
+        MILVUS_COLLECTION: rag
+        MILVUS_DIMENSION: 1536
+        COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
       run: |
         docker compose up -d
         sleep 60  # Wait for services to be ready

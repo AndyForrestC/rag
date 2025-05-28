@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ingestion-service-test:
     build:
@@ -7,8 +5,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8003:8000" # Use different port for test to avoid conflict
-    env_file:
-      - ./ingestion-service/.env
+    environment:
+      - MODEL=${MODEL:-gpt-3.5-turbo-0125}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MILVUS_API_KEY=${MILVUS_API_KEY}
+      - MILVUS_URI=${MILVUS_URI}
+      - MILVUS_COLLECTION=${MILVUS_COLLECTION:-rag}
+      - MILVUS_DIMENSION=${MILVUS_DIMENSION:-1536}
+      - COHERE_API_KEY=${COHERE_API_KEY}
     volumes:
       - ./ingestion-service:/app # Corrected volume path
       - ./data:/app/data # Corrected volume path
@@ -24,8 +28,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8002:8000" # Use different port for test
-    env_file:
-      - ./inference-service/backend/.env
+    environment:
+      - MODEL=${MODEL:-gpt-3.5-turbo-0125}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - MILVUS_API_KEY=${MILVUS_API_KEY}
+      - MILVUS_URI=${MILVUS_URI}
+      - MILVUS_COLLECTION=${MILVUS_COLLECTION:-rag}
+      - MILVUS_DIMENSION=${MILVUS_DIMENSION:-1536}
+      - COHERE_API_KEY=${COHERE_API_KEY}
     volumes:
       - ./inference-service/backend:/app # Corrected volume path
     # depends_on:
@@ -40,8 +50,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:3000" # Use different port for test
-    env_file:
-      - ./inference-service/frontend/.env
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8002}
     # depends_on:
     #   - inference-backend-test
     networks:

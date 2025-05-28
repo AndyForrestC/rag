@@ -269,6 +269,14 @@ jobs:
         docker compose version
     
     - name: Start test environment
+      env:
+        MODEL: gpt-3.5-turbo-0125
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        MILVUS_API_KEY: ${{ secrets.MILVUS_API_KEY }}
+        MILVUS_URI: ${{ secrets.MILVUS_URI }}
+        MILVUS_COLLECTION: rag
+        MILVUS_DIMENSION: 1536
+        COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
       run: |
         docker compose -f docker-compose.test.yml up -d
         sleep 30  # Wait for services to be ready

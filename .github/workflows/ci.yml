@@ -268,6 +268,38 @@ jobs:
         docker --version
         docker compose version
     
+    - name: Check port availability and kill conflicting processes
+      run: |
+        echo "Checking port availability..."
+        # Kill any processes using ports 3001, 8000, 8001
+        sudo fuser -k 3001/tcp || true
+        sudo fuser -k 8000/tcp || true
+        sudo fuser -k 8001/tcp || true
+        
+        # Wait a moment for processes to terminate
+        sleep 2
+        
+        # Verify ports are free
+        if lsof -Pi :3001 -sTCP:LISTEN -t >/dev/null 2>&1; then
+          echo "Port 3001 is still in use, attempting to free it..."
+          sudo lsof -ti:3001 | xargs -r sudo kill -9
+        fi
+        
+        if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
+          echo "Port 8000 is still in use, attempting to free it..."
+          sudo lsof -ti:8000 | xargs -r sudo kill -9
+        fi
+        
+        if lsof -Pi :8001 -sTCP:LISTEN -t >/dev/null 2>&1; then
+          echo "Port 8001 is still in use, attempting to free it..."
+          sudo lsof -ti:8001 | xargs -r sudo kill -9
+        fi
+        
+        # Wait after cleanup
+        sleep 3
+        
+        echo "Port cleanup completed"
+    
     - name: Start test environment
       env:
         MODEL: gpt-3.5-turbo-0125
@@ -281,6 +313,24 @@ jobs:
         docker compose -f docker-compose.yml up -d
         sleep 30  # Wait for services to be ready
     
+    - name: Wait for services to be healthy
+      run: |
+        echo "Waiting for services to be healthy..."
+        
+        # Wait for ingestion service
+        timeout 20 bash -c 'while ! curl -f http://localhost:8001/health >/dev/null 2>&1; do echo "Waiting for ingestion service..."; sleep 2; done'
+        echo "✅ Ingestion service is healthy"
+        
+        # Wait for inference backend
+        timeout 20 bash -c 'while ! curl -f http://localhost:8000/health >/dev/null 2>&1; do echo "Waiting for inference backend..."; sleep 2; done'
+        echo "✅ Inference backend is healthy"
+        
+        # Wait for frontend
+        timeout 20 bash -c 'while ! curl -f http://localhost:3001 >/dev/null 2>&1; do echo "Waiting for frontend..."; sleep 2; done'
+        echo "✅ Frontend is healthy"
+        
+        echo "All services are ready!"
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -293,6 +343,24 @@ jobs:
     - name: Run integration tests
       run: |
         pytest tests/integration/ -v
+    
+    - name: Show container logs on failure
+      if: failure()
+      run: |
+        echo "=== Container Status ==="
+        docker ps -a
+        echo ""
+        echo "=== Ingestion Service Logs ==="
+        docker logs rag-ingestion-service-1 || true
+        echo ""
+        echo "=== Inference Backend Logs ==="
+        docker logs rag-inference-backend-1 || true
+        echo ""
+        echo "=== Inference Frontend Logs ==="
+        docker logs rag-inference-frontend-1 || true
+        echo ""
+        echo "=== Nginx Logs ==="
+        docker logs rag-nginx-1 || true
     
     - name: Stop test environment
       if: always()

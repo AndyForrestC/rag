@@ -58,7 +58,7 @@ services:
       context: ./inference-service/frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - MODEL=${MODEL:-gpt-3.5-turbo-0125}
       - NEXT_PUBLIC_MODEL=${NEXT_PUBLIC_MODEL:-gpt-3.5-turbo-0125}

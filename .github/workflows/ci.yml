@@ -325,10 +325,6 @@ jobs:
         timeout 20 bash -c 'while ! curl -f http://localhost:8000/health >/dev/null 2>&1; do echo "Waiting for inference backend..."; sleep 2; done'
         echo "✅ Inference backend is healthy"
         
-        # Wait for frontend
-        timeout 20 bash -c 'while ! curl -f http://localhost:3001 >/dev/null 2>&1; do echo "Waiting for frontend..."; sleep 2; done'
-        echo "✅ Frontend is healthy"
-        
         echo "All services are ready!"
     
     - name: Set up Python

@@ -33,8 +33,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    env_file:
-      - ./inference-service/backend/.env
     environment:
       - MODEL=${MODEL:-gpt-3.5-turbo-0125}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -61,8 +59,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    env_file:
-      - ./inference-service/frontend/.env
     environment:
       - MODEL=${MODEL:-gpt-3.5-turbo-0125}
       - NEXT_PUBLIC_MODEL=${NEXT_PUBLIC_MODEL:-gpt-3.5-turbo-0125}

@@ -278,7 +278,7 @@ jobs:
         MILVUS_DIMENSION: 1536
         COHERE_API_KEY: ${{ secrets.COHERE_API_KEY }}
       run: |
-        docker compose -f docker-compose.test.yml up -d
+        docker compose -f docker-compose.yml up -d
         sleep 30  # Wait for services to be ready
     
     - name: Set up Python
@@ -297,7 +297,7 @@ jobs:
     - name: Stop test environment
       if: always()
       run: |
-        docker compose -f docker-compose.test.yml down
+        docker compose -f docker-compose.yml down
 
   # Docker 构建测试
   docker-build-test:

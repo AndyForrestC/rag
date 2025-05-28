@@ -20,10 +20,11 @@ RUN apt-get update && apt-get install -y \
 # 安装Poetry
 RUN pip install poetry
 
-# 配置Poetry
+# 配置Poetry - 不使用虚拟环境，直接安装到系统Python
 ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VENV_IN_PROJECT=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
+    POETRY_VENV_IN_PROJECT=0 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache \
+    POETRY_VIRTUALENVS_CREATE=false
 
 # 复制Poetry配置文件
 COPY pyproject.toml poetry.lock ./
@@ -34,12 +35,16 @@ RUN poetry install --without dev --no-root && rm -rf $POETRY_CACHE_DIR
 # 复制应用代码
 COPY . .
 
-# 创建非root用户
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+# 创建非root用户并设置权限
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app && \
+    chown -R appuser:appuser /usr/local/lib/python3.11/site-packages && \
+    chmod -R 755 /usr/local/lib/python3.11/site-packages
+
 USER appuser
 
 # 暴露端口
 EXPOSE 8000
 
 # 启动命令
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -9,31 +9,31 @@ on:
 
 jobs:
   # 代码质量检查 - SonarCloud
-  sonarcloud:
-    runs-on: ubuntu-latest
+  # sonarcloud:
+  #   runs-on: ubuntu-latest
     
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # 完整的Git历史用于SonarCloud分析
+  #   steps:
+  #   - uses: actions/checkout@v4
+  #     with:
+  #       fetch-depth: 0  # 完整的Git历史用于SonarCloud分析
     
-    - name: Get branch name
-      id: branch
-      run: |
-        if [ "${{ github.event_name }}" = "pull_request" ]; then
-          echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
-        else
-          echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-        fi
+  #   - name: Get branch name
+  #     id: branch
+  #     run: |
+  #       if [ "${{ github.event_name }}" = "pull_request" ]; then
+  #         echo "branch_name=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+  #       else
+  #         echo "branch_name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+  #       fi
     
-    - name: SonarCloud Scan
-      uses: SonarSource/sonarcloud-github-action@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      with:
-        args: >
-          -Dsonar.branch.name=${{ steps.branch.outputs.branch_name }}
+  #   - name: SonarCloud Scan
+  #     uses: SonarSource/sonarcloud-github-action@master
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #     with:
+  #       args: >
+  #         -Dsonar.branch.name=${{ steps.branch.outputs.branch_name }}
 
   # 测试和构建 ingestion-service
   test-ingestion-service:

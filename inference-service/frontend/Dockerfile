@@ -46,18 +46,15 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# 复制package.json用于npm scripts
+# 复制package.json和package-lock.json
 COPY --from=builder /app/package*.json ./
 
-# 复制所有依赖（包括next CLI）
-COPY --from=deps /app/node_modules ./node_modules
+# 安装生产依赖
+RUN npm ci --only=production && npm cache clean --force
 
 # 复制构建产物
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-
-# 修改所有权
-RUN chown -R nextjs:nodejs /app
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 

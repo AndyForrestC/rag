@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   images: { unoptimized: true },
   webpack: (config) => {
     // See https://webpack.js.org/configuration/resolve/#resolvealias

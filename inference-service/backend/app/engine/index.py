@@ -16,9 +16,9 @@ def get_index_and_query_engine():
 
     cohere_api_key = os.environ["COHERE_API_KEY"]
     cohere_rerank = CohereRerank(
-        api_key=cohere_api_key, 
+        api_key=cohere_api_key,
         model="rerank-v3.5",  # Use the latest recommended model
-        top_n=2
+        top_n=2,
     )  # return top 2 nodes from reranker
 
     try:

@@ -13,7 +13,7 @@ def ingestion(file: UploadFile = File(...)):
         return {
             "message": "File processed successfully",
             "filename": result["filename"],
-            "nodes_created": result["nodes_created"]
+            "nodes_created": result["nodes_created"],
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -3,7 +3,12 @@ import os
 import tempfile
 from io import StringIO
 from dotenv import load_dotenv
-from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, StorageContext, Document
+from llama_index.core import (
+    SimpleDirectoryReader,
+    VectorStoreIndex,
+    StorageContext,
+    Document,
+)
 from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.vector_stores.milvus import MilvusVectorStore
@@ -79,37 +84,48 @@ def process_uploaded_file(file: UploadFile):
             )
 
         # Validate file type and extension
-        allowed_extensions = {'.txt', '.md', '.pdf', '.doc', '.docx', '.csv'}
+        allowed_extensions = {".txt", ".md", ".pdf", ".doc", ".docx", ".csv"}
         allowed_content_types = {
-            'text/plain', 'text/markdown', 'application/pdf',
-            'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/csv'
+            "text/plain",
+            "text/markdown",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/csv",
         }
-        
+
         # Check file extension
         if file.filename:
-            file_ext = '.' + file.filename.split('.')[-1].lower() if '.' in file.filename else ''
+            file_ext = (
+                "." + file.filename.split(".")[-1].lower()
+                if "." in file.filename
+                else ""
+            )
             if file_ext not in allowed_extensions:
-                raise ValueError(f"Unsupported file extension: {file_ext}. Allowed: {', '.join(allowed_extensions)}")
-        
+                raise ValueError(
+                    f"Unsupported file extension: {file_ext}. Allowed: {', '.join(allowed_extensions)}"
+                )
+
         # Check content type
         if file.content_type and file.content_type not in allowed_content_types:
-            raise ValueError(f"Unsupported content type: {file.content_type}. Allowed: {', '.join(allowed_content_types)}")
+            raise ValueError(
+                f"Unsupported content type: {file.content_type}. Allowed: {', '.join(allowed_content_types)}"
+            )
 
         # Read file content
         content = file.file.read()
-        
+
         # Check for binary content by looking for null bytes and other binary indicators
-        if b'\x00' in content[:100]:  # Check first 100 bytes for null bytes
+        if b"\x00" in content[:100]:  # Check first 100 bytes for null bytes
             raise ValueError("Binary content detected - only text files are supported")
 
         # Handle different file types
         if file.content_type and "text" in file.content_type:
-            text_content = content.decode('utf-8')
+            text_content = content.decode("utf-8")
         else:
             # For other file types, try to decode as text
             try:
-                text_content = content.decode('utf-8')
+                text_content = content.decode("utf-8")
             except UnicodeDecodeError:
                 raise ValueError(f"Unable to decode file as text: {file.content_type}")
 
@@ -119,8 +135,8 @@ def process_uploaded_file(file: UploadFile):
             metadata={
                 "filename": file.filename,
                 "content_type": file.content_type,
-                "size": len(content)
-            }
+                "size": len(content),
+            },
         )
 
         # Create MilvusVectorStore
@@ -149,7 +165,11 @@ def process_uploaded_file(file: UploadFile):
         )
 
         logger.info(f"Successfully processed file: {file.filename}")
-        return {"status": "success", "filename": file.filename, "nodes_created": len(nodes)}
+        return {
+            "status": "success",
+            "filename": file.filename,
+            "nodes_created": len(nodes),
+        }
 
     except (KeyError, ValueError) as e:
         logger.error(f"Configuration error: {e}")

@@ -70,6 +70,7 @@ def generate_datasource():
 def process_uploaded_file(file: UploadFile):
     """Process a single uploaded file and add it to the vector database"""
     try:
+        # Get and validate environment variables
         milvus_uri = os.getenv("MILVUS_URI")
         milvus_api_key = os.getenv("MILVUS_API_KEY")
         milvus_collection = os.getenv("MILVUS_COLLECTION")
@@ -80,6 +81,11 @@ def process_uploaded_file(file: UploadFile):
                 "Missing required environment variables: "
                 "MILVUS_URI, MILVUS_API_KEY, or MILVUS_COLLECTION."
             )
+
+        # Now we know these are not None, so we can assert for type checker
+        assert milvus_uri is not None
+        assert milvus_api_key is not None
+        assert milvus_collection is not None
 
         # Validate file type and extension
         allowed_extensions = {".txt", ".md", ".pdf", ".doc", ".docx", ".csv"}
@@ -132,14 +138,12 @@ def process_uploaded_file(file: UploadFile):
                 raise ValueError(f"Unable to decode file as text: {file.content_type}")
 
         # Create Document object
-        document = Document(
-            text=text_content,
-            metadata={
-                "filename": file.filename,
-                "content_type": file.content_type,
-                "size": len(content),
-            },
-        )
+        document = Document(text=text_content)
+        document.metadata = {
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "size": len(content),
+        }
 
         # Create MilvusVectorStore
         vector_store = MilvusVectorStore(

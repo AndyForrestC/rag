@@ -6,28 +6,27 @@ import { Message } from "./chat-messages";
 export default function ChatAvatar(message: Message) {
   if (message.role === "user") {
     return (
-      <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-md border shadow bg-background">
+      <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-gray-900 text-white">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 256 256"
+          viewBox="0 0 24 24"
           fill="currentColor"
           className="h-4 w-4"
         >
-          <path d="M230.92 212c-15.23-26.33-38.7-45.21-66.09-54.16a72 72 0 1 0-73.66 0c-27.39 8.94-50.86 27.82-66.09 54.16a8 8 0 1 0 13.85 8c18.84-32.56 52.14-52 89.07-52s70.23 19.44 89.07 52a8 8 0 1 0 13.85-8ZM72 96a56 56 0 1 1 56 56 56.06 56.06 0 0 1-56-56Z"></path>
+          <path fillRule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clipRule="evenodd" />
         </svg>
       </div>
     );
   }
 
   return (
-    <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-md border  bg-black text-white">
+    <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-white border border-gray-200 overflow-hidden">
       <Image
-        className="rounded-md"
-        src="/llama.png"
-        alt="Llama Logo"
-        width={24}
-        height={24}
-        priority
+        src="/favicon.svg"
+        alt="AI Assistant"
+        width={20}
+        height={20}
+        className="object-contain"
       />
     </div>
   );

@@ -15,7 +15,7 @@ Please add a `.env` file at the project root, you can copy content from `.env.ex
 
 ```
 # OpenAI
-MODEL=gpt-3.5-turbo-0125
+MODEL=gpt-4o
 OPENAI_API_KEY=sk-###
 
 # Milvus

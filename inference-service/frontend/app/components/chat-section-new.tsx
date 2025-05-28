@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "ai/react";
-import { useMemo, useState, useEffect, useCallback } from "react"; // Added useCallback
+import { useMemo, useState, useEffect } from "react";
 import { insertDataIntoMessages } from "./transform";
 import { ChatInput, ChatMessages } from "./ui/chat";
 import SessionSidebar from "./ui/chat/session-sidebar";
@@ -13,7 +13,6 @@ export default function ChatSection() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true); // New state for initial load
 
   const {
     messages,
@@ -26,12 +25,12 @@ export default function ChatSection() {
     data,
     setMessages,
   } = useChat({
-    api: "/api/chat-proxy",
+    api: "http://localhost:8000/api/chat",
     headers: {
       "Content-Type": "application/json",
     },
     body: {
-      session_id: currentSessionId
+      session_id: currentSessionId,
     },
   });
 
@@ -39,119 +38,95 @@ export default function ChatSection() {
     return insertDataIntoMessages(messages, data);
   }, [messages, data]);
 
-  const handleNewChat = useCallback(async () => {
-    try {
-      // Clear all existing messages first - this prevents any residual messages
-      setMessages([]);
-      
-      // Instead of creating a new session here, we'll use a simpler approach
-      // Just clear the current session to show the welcome screen
-      setCurrentSessionId(null);
-      setCurrentSession(null);
-      
-      // Close the sidebar
-      setIsSidebarOpen(false);
-      
-      // This approach shows the welcome screen immediately without creating a new session
-      // A new session will only be created when the user starts typing
-    } catch (error) {
-      console.error('Failed to handle new chat:', error);
-      // Fallback: clear current chat state
-      setCurrentSessionId(null);
-      setCurrentSession(null);
-      setMessages([]);
-      setIsSidebarOpen(false);
-    }
-  }, [setMessages, setCurrentSessionId, setCurrentSession, setIsSidebarOpen]);
-
-  const handleSessionSelect = useCallback(async (sessionId: string) => {
+  // 当选择会话时加载消息
+  const handleSessionSelect = async (sessionId: string) => {
     try {
       const sessionWithMessages = await ChatAPI.getSession(sessionId);
       setCurrentSessionId(sessionId);
       setCurrentSession(sessionWithMessages.session);
       
+      // 转换消息格式以兼容 useChat
       const formattedMessages = sessionWithMessages.messages.map((msg: ChatMessage) => ({
-        id: msg.id || Math.random().toString(), // Ensure ID for useChat
+        id: msg.id,
         content: msg.content,
         role: msg.role,
         createdAt: new Date(msg.timestamp),
       }));
       
       setMessages(formattedMessages);
-      setIsSidebarOpen(false);
+      setIsSidebarOpen(false); // 选择会话后关闭侧边栏
     } catch (error) {
       console.error('Failed to load session:', error);
     }
-  }, [setMessages, setCurrentSessionId, setCurrentSession, setIsSidebarOpen]);
+  };
 
-  // Effect for loading initial data - ensures clean state and prevents duplicates on refresh
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setInitialLoading(true);
-      try {
-        // First, completely clear any existing state
-        setCurrentSessionId(null);
-        setCurrentSession(null);
-        setMessages([]);
-        
-        // We explicitly don't reload the most recent session on page refresh
-        // This prevents the issue of duplicated messages
-        
-        // The user will see a clean welcome screen and they can
-        // either select an existing chat or create a new one
-      } catch (error) {
-        console.error('Failed to initialize session data:', error);
-      } finally {
-        setInitialLoading(false);
-      }
-    };
-    loadInitialData();
-  }, []); // Only run once on mount
+  // 创建新聊天
+  const handleNewChat = async () => {
+    try {
+      const newSession = await ChatAPI.createSession();
+      setCurrentSessionId(newSession.id);
+      setCurrentSession(newSession);
+      setMessages([]);
+      setIsSidebarOpen(false);
+    } catch (error) {
+      console.error('Failed to create new session:', error);
+      // 如果创建失败，至少清空当前聊天
+      setCurrentSessionId(null);
+      setCurrentSession(null);
+      setMessages([]);
+      setIsSidebarOpen(false);
+    }
+  };
 
-  // Effect for auto-creating a session if user types without one, after initial load
+  // 如果没有当前会话且有消息，自动创建会话
   useEffect(() => {
-    if (!initialLoading && !currentSessionId && messages.length > 0 && messages[messages.length -1].role === 'user') {
-      // Only trigger if the last message is from user, indicating they typed something.
+    if (!currentSessionId && messages.length > 0) {
       handleNewChat();
     }
-  }, [initialLoading, currentSessionId, messages, handleNewChat]); // messages is from useChat
+  }, [messages.length, currentSessionId]);
 
-  const handleSubmitWithSession = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+  // 重写 handleSubmit 以确保有会话ID
+  const handleSubmitWithSession = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // If there's no current session, create a new one before submitting
+    // 如果没有当前会话，先创建一个
     if (!currentSessionId) {
       try {
         const newSession = await ChatAPI.createSession();
         setCurrentSessionId(newSession.id);
         setCurrentSession(newSession);
       } catch (error) {
-        console.error('Failed to create session before submit:', error);
-        return; 
+        console.error('Failed to create session:', error);
       }
     }
     
-    // Call the original handleSubmit from useChat
+    // 调用原始的 handleSubmit
     handleSubmit(e);
-  }, [currentSessionId, handleSubmit, setCurrentSessionId, setCurrentSession]);
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* 菜单按钮 */}
       <MenuButton 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
         isOpen={isSidebarOpen}
       />
+
+      {/* 会话侧边栏 */}
       <SessionSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         currentSessionId={currentSessionId || undefined}
         onSessionSelect={handleSessionSelect}
-        onNewChat={handleNewChat} // Pass the memoized handleNewChat
+        onNewChat={handleNewChat}
       />
+
+      {/* 主聊天区域 */}
       <div className={`
         flex-1 flex flex-col transition-all duration-300
         ${isSidebarOpen ? 'lg:ml-80' : 'ml-0'}
       `}>
+        {/* 头部标题 */}
         <div className="bg-white border-b border-gray-200 px-6 py-4 ml-16 lg:ml-0">
           <div className="max-w-2xl mx-auto">
             <h1 className="text-lg font-semibold text-gray-800">
@@ -159,26 +134,30 @@ export default function ChatSection() {
             </h1>
             {currentSession && (
               <p className="text-sm text-gray-500 mt-1">
-                {currentSession.message_count} messages • Last updated: {new Date(currentSession.updated_at).toLocaleString()}
+                {currentSession.message_count} 条消息 • 最后更新: {new Date(currentSession.updated_at).toLocaleString()}
               </p>
             )}
           </div>
         </div>
+
+        {/* 聊天消息区域 */}
         <div className="flex-1 overflow-hidden">
           <ChatMessages
             messages={transformedMessages}
-            isLoading={isLoading} // isLoading from useChat
+            isLoading={isLoading}
             reload={reload}
             stop={stop}
           />
         </div>
+        
+        {/* 输入区域 */}
         <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
           <div className="max-w-2xl mx-auto">
             <ChatInput
               input={input}
               handleSubmit={handleSubmitWithSession}
               handleInputChange={handleInputChange}
-              isLoading={isLoading} // isLoading from useChat
+              isLoading={isLoading}
               multiModal={process.env.NEXT_PUBLIC_MODEL === "gpt-4-vision-preview"}
             />
           </div>

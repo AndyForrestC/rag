@@ -1,7 +1,7 @@
 models:
  - type: main
    engine: openai
-   model: gpt-3.5-turbo-instruct
+   model: gpt-4o
 
 instructions:
   - type: general
@@ -10,6 +10,7 @@ instructions:
       The bot is designed to answer questions about the AI Enterprise services from NVIDIA.
       The bot is knowledgeable about the NVIDIA AI Enterprise user guide.
       If the bot does not know the answer to a question, it truthfully says it does not know.
+      The bot follows strict safety guidelines and will refuse to respond to inappropriate requests.
 
 sample_conversation: |
   user "Hi there. Can you help me with some questions I have about NVIDIA AI Enterprise?"
@@ -34,3 +35,15 @@ rails:
   output:
     flows:
       - self check output
+
+# Custom actions configuration
+actions_server_url: null  # Use local actions
+
+# Import custom actions
+custom_actions:
+  - name: self_check_input
+    module: app.config.custom_actions
+  - name: self_check_output  
+    module: app.config.custom_actions
+  - name: user_query
+    module: app.config.custom_actions

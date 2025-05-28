@@ -5,13 +5,23 @@ load_dotenv()
 import logging
 import os, sys
 import uvicorn
+from contextlib import asynccontextmanager
 from app.api.routers.chat import chat_router
+from app.api.routers.sessions import sessions_router
+from app.database import init_database
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await init_database()
+    yield
+    # Shutdown (if needed)
+
+app = FastAPI(lifespan=lifespan)
 
 environment = os.getenv("ENVIRONMENT", "dev")  # Default to 'development' if not set
 
@@ -28,6 +38,7 @@ if environment == "dev":
     )
 
 app.include_router(chat_router, prefix="/api/chat")
+app.include_router(sessions_router, prefix="/api/sessions")
 
 
 if __name__ == "__main__":

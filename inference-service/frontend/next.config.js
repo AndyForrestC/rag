@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
+  // Remove static export for development mode
   images: { unoptimized: true },
   webpack: (config) => {
     // See https://webpack.js.org/configuration/resolve/#resolvealias

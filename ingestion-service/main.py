@@ -26,4 +26,4 @@ if environment == "dev":
 app.include_router(ingestion_router, prefix="/api/ingestion")
 
 if __name__ == "__main__":
-    uvicorn.run(app="main:app", host="0.0.0.0", reload=True)
+    uvicorn.run(app="main:app", host="0.0.0.0", port=8001, reload=True)

@@ -46,7 +46,7 @@ The Enterprise RAG System employs a modern, cloud-native technology stack design
 
 ### 🤖 **AI & Machine Learning**
 - **LLM Integration**: OpenAI API
-  - GPT-3.5-turbo for text generation
+  - GPT-4o for text generation
   - text-embedding-ada-002 for embeddings
   - Streaming response capabilities
   - Token usage optimization

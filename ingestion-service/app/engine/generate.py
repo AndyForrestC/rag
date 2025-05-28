@@ -1,7 +1,5 @@
 import logging
 import os
-import tempfile
-from io import StringIO
 from dotenv import load_dotenv
 from llama_index.core import (
     SimpleDirectoryReader,
@@ -102,14 +100,17 @@ def process_uploaded_file(file: UploadFile):
                 else ""
             )
             if file_ext not in allowed_extensions:
+                allowed_exts = ", ".join(allowed_extensions)
                 raise ValueError(
-                    f"Unsupported file extension: {file_ext}. Allowed: {', '.join(allowed_extensions)}"
+                    f"Unsupported file extension: {file_ext}. Allowed: {allowed_exts}"
                 )
 
         # Check content type
         if file.content_type and file.content_type not in allowed_content_types:
+            allowed_types = ", ".join(allowed_content_types)
             raise ValueError(
-                f"Unsupported content type: {file.content_type}. Allowed: {', '.join(allowed_content_types)}"
+                f"Unsupported content type: {file.content_type}. "
+                f"Allowed: {allowed_types}"
             )
 
         # Read file content
@@ -117,7 +118,8 @@ def process_uploaded_file(file: UploadFile):
 
         # Check for binary content by looking for null bytes and other binary indicators
         if b"\x00" in content[:100]:  # Check first 100 bytes for null bytes
-            raise ValueError("Binary content detected - only text files are supported")
+            msg = "Binary content detected - only text files are supported"
+            raise ValueError(msg)
 
         # Handle different file types
         if file.content_type and "text" in file.content_type:

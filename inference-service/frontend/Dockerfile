@@ -4,6 +4,9 @@ FROM node:18-alpine AS base
 # 设置工作目录
 WORKDIR /app
 
+# 安装curl用于健康检查
+RUN apk add --no-cache curl
+
 # 安装依赖阶段 - 包含开发依赖用于构建
 FROM base AS deps
 RUN apk add --no-cache libc6-compat

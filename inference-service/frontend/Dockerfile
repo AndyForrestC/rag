@@ -46,14 +46,18 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# 复制package.json用于npm scripts
+COPY --from=builder /app/package*.json ./
+
 # 复制所有依赖（包括next CLI）
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
 
 # 复制构建产物
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder /app/.next ./.next
+
+# 修改所有权
+RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
@@ -63,5 +67,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# 启动命令 - 如果server.js存在则使用它，否则使用npm start
-CMD sh -c 'if [ -f "server.js" ]; then node server.js; else npm start; fi'
+# 使用npm start启动
+CMD ["npm", "start"]

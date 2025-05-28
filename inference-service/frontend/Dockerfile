@@ -46,13 +46,17 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# 复制生产依赖
+COPY --from=production-deps /app/node_modules ./node_modules
+
 # 复制构建产物
 COPY --from=builder /app/public ./public
-
-# 自动利用输出跟踪来减少镜像大小
-# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# 创建启动脚本以处理server.js不存在的情况
+RUN echo '#!/bin/sh\nif [ -f "server.js" ]; then\n  exec node server.js\nelse\n  exec npm start\nfi' > /app/start.sh && \
+    chmod +x /app/start.sh
 
 USER nextjs
 
@@ -63,4 +67,4 @@ ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
 # 启动命令
-CMD ["node", "server.js"]
+CMD ["/app/start.sh"]

@@ -54,10 +54,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# 创建启动脚本以处理server.js不存在的情况
-RUN echo '#!/bin/sh\nif [ -f "server.js" ]; then\n  exec node server.js\nelse\n  exec npm start\nfi' > /app/start.sh && \
-    chmod +x /app/start.sh
-
 USER nextjs
 
 # 暴露端口
@@ -66,5 +62,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# 启动命令
-CMD ["/app/start.sh"]
+# 启动命令 - 如果server.js存在则使用它，否则使用npm start
+CMD sh -c 'if [ -f "server.js" ]; then node server.js; else npm start; fi'

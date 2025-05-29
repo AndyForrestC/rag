@@ -11,34 +11,34 @@
 
 ```mermaid
 gantt
-    title 🏗️ Enterprise RAG System - Complete Development Roadmap
+    title Enterprise RAG System - Complete Development Roadmap
     dateFormat  YYYY-MM-DD
     axisFormat  %m/%d
     
-    section 🎯 Phase 1: Foundation (Weeks 1-4)
+    section Phase 1: Foundation (Weeks 1-4)
     Requirements & Research     :done, req, 2025-03-16, 2025-03-22
     User Stories & Use Cases    :done, stories, 2025-03-23, 2025-03-29
     Architecture Design         :done, arch, 2025-03-30, 2025-04-05
     POC Validation              :done, poc, 2025-04-06, 2025-04-12
     
-    section 🔧 Phase 2: MVP Development (Weeks 5-14)
+    section Phase 2: MVP Development (Weeks 5-14)
     Sprint 1: Infrastructure    :done, s1, 2025-04-13, 2025-04-26
     Sprint 2: Document Engine   :done, s2, 2025-04-27, 2025-05-10
     Sprint 3: AI Core Services  :done, s3, 2025-05-11, 2025-05-24
     Sprint 4: Frontend & UX     :active, s4, 2025-05-25, 2025-06-07
     Sprint 5: Security & Testing :crit, s5, 2025-06-08, 2025-06-14
     
-    section 🚀 Phase 3: Production (Weeks 15-21)
+    section Phase 3: Production (Weeks 15-21)
     Sprint 6: Advanced Analytics :s6, 2025-06-15, 2025-06-28
     Sprint 7: Enterprise Security :s7, 2025-06-29, 2025-07-12
     Sprint 8: Deployment & Scale :s8, 2025-07-13, 2025-07-26
     Final Integration & Demo    :s9, 2025-07-27, 2025-08-08
     
-    section 🎖️ Critical Milestones
-    Mid-term Defense 🎓        :milestone, defense, 2025-05-29, 0d
-    MVP Feature Complete 🏆    :milestone, mvp, 2025-06-14, 0d
-    Production Ready 🚀        :milestone, prod, 2025-07-26, 0d
-    Final Demonstration 🎯     :milestone, final, 2025-08-08, 0d
+    section Critical Milestones
+    Mid-term Defense            :milestone, defense, 2025-05-29, 0d
+    MVP Feature Complete        :milestone, mvp, 2025-06-14, 0d
+    Production Ready            :milestone, prod, 2025-07-26, 0d
+    Final Demonstration         :milestone, final, 2025-08-08, 0d
 ```
 
 ## 📈 Current Progress Analytics (Week 11 Status)

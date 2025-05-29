@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Implementation Roadmap - Enterprise RAG System</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .status-legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .status-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+        .implemented { background-color: #48bb78; }
+        .in-progress { background-color: #ed8936; }
+        .planned { background-color: #4299e1; }
+        .section {
+            margin: 40px 0;
+            padding: 20px;
+            border-radius: 8px;
+            background: #f7fafc;
+        }
+        .section h2 {
+            color: #2d3748;
+            border-bottom: 3px solid #4299e1;
+            padding-bottom: 10px;
+        }
+        .implementation-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .step-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #4299e1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .step-card h3 {
+            margin-top: 0;
+            color: #2d3748;
+        }
+        .timeline {
+            margin: 20px 0;
+        }
+        .mermaid-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ Database Implementation Roadmap</h1>
+        <div class="status-legend">
+            <div class="status-item">
+                <div class="status-dot implemented"></div>
+                <span>✅ Implemented</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot in-progress"></div>
+                <span>🔄 In Progress</span>
+            </div>
+            <div class="status-item">
+                <div class="status-dot planned"></div>
+                <span>📋 Planned</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Current Architecture Assessment</h2>
+            <div class="mermaid-container">
+                <div class="mermaid">
+                graph TB
+                    subgraph "✅ IMPLEMENTED"
+                        PG1[PostgreSQL Database]
+                        CS[chat_sessions table]
+                        CM[chat_messages table]
+                        API1[Chat REST APIs]
+                        MV[Milvus Vector DB]
+                        EMB[Document Embeddings]
+                        
+                        PG1 --> CS
+                        PG1 --> CM
+                        CS --> CM
+                        API1 --> PG1
+                        MV --> EMB
+                    end
+                    
+                    subgraph "🔄 NEXT PHASE"
+                        USERS[users table]
+                        ROLES[roles table]
+                        DOCS[documents table]
+                        COLLS[collections table]
+                        AUTH[Authentication APIs]
+                        
+                        USERS --> ROLES
+                        DOCS --> COLLS
+                        AUTH --> USERS
+                    end
+                    
+                    subgraph "📋 FUTURE"
+                        ANALYTICS[Analytics Tables]
+                        REDIS[Redis Cache]
+                        AUDIT[Audit Logs]
+                        MONITOR[Monitoring]
+                    end
+                    
+                    CS -.->|"Add user_id FK"| USERS
+                    DOCS -.->|"Link to users"| USERS
+                    
+                    classDef implemented fill:#c6f6d5,stroke:#38a169,stroke-width:2px
+                    classDef nextPhase fill:#feebc8,stroke:#ed8936,stroke-width:2px
+                    classDef future fill:#bee3f8,stroke:#4299e1,stroke-width:2px
+                    
+                    class PG1,CS,CM,API1,MV,EMB implemented
+                    class USERS,ROLES,DOCS,COLLS,AUTH nextPhase
+                    class ANALYTICS,REDIS,AUDIT,MONITOR future
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🚀 Implementation Timeline</h2>
+            <div class="mermaid-container">
+                <div class="mermaid">
+                gantt
+                    title Database Implementation Timeline
+                    dateFormat  YYYY-MM-DD
+                    section Phase 1 - User Management
+                    Create User Tables           :active, p1a, 2025-05-29, 3d
+                    Implement Authentication     :p1b, after p1a, 5d
+                    Update Chat Sessions        :p1c, after p1b, 2d
+                    
+                    section Phase 2 - Document Management
+                    Document Metadata Tables    :p2a, after p1c, 4d
+                    File Upload Integration     :p2b, after p2a, 3d
+                    Permission System          :p2c, after p2b, 5d
+                    
+                    section Phase 3 - Analytics
+                    Query Logging Tables       :p3a, after p2c, 3d
+                    Performance Metrics        :p3b, after p3a, 4d
+                    Monitoring Dashboard       :p3c, after p3b, 5d
+                    
+                    section Phase 4 - Optimization
+                    Redis Cache Layer          :p4a, after p3c, 5d
+                    Database Optimization      :p4b, after p4a, 3d
+                    Load Testing              :p4c, after p4b, 3d
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Implementation Steps</h2>
+            <div class="implementation-steps">
+                <div class="step-card">
+                    <h3>📝 Step 1: User Management</h3>
+                    <ul>
+                        <li>Create users, roles, user_roles tables</li>
+                        <li>Add user_id FK to chat_sessions</li>
+                        <li>Implement JWT authentication</li>
+                        <li>Add user registration/login APIs</li>
+                    </ul>
+                    <strong>Timeline: 10 days</strong>
+                </div>
+                
+                <div class="step-card">
+                    <h3>📄 Step 2: Document Management</h3>
+                    <ul>
+                        <li>Create documents, collections tables</li>
+                        <li>Add document ownership and permissions</li>
+                        <li>Update ingestion service integration</li>
+                        <li>Implement document sharing features</li>
+                    </ul>
+                    <strong>Timeline: 12 days</strong>
+                </div>
+                
+                <div class="step-card">
+                    <h3>📊 Step 3: Analytics & Monitoring</h3>
+                    <ul>
+                        <li>Create query_logs, performance_metrics tables</li>
+                        <li>Add audit trail functionality</li>
+                        <li>Implement system monitoring</li>
+                        <li>Create analytics dashboard</li>
+                    </ul>
+                    <strong>Timeline: 12 days</strong>
+                </div>
+                
+                <div class="step-card">
+                    <h3>⚡ Step 4: Performance Optimization</h3>
+                    <ul>
+                        <li>Implement Redis caching layer</li>
+                        <li>Add database indexing optimization</li>
+                        <li>Connection pool tuning</li>
+                        <li>Load testing and optimization</li>
+                    </ul>
+                    <strong>Timeline: 11 days</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📋 Database Schema Evolution</h2>
+            <div class="mermaid-container">
+                <div class="mermaid">
+                erDiagram
+                    %% Current Implementation
+                    CHAT_SESSIONS ||--o{ CHAT_MESSAGES : contains
+                    CHAT_SESSIONS {
+                        uuid id PK
+                        string title
+                        datetime created_at
+                        datetime updated_at
+                        int message_count
+                        text first_message_preview
+                    }
+                    CHAT_MESSAGES {
+                        uuid id PK
+                        uuid session_id FK
+                        text content
+                        enum role
+                        datetime timestamp
+                        jsonb extra_data
+                    }
+                    
+                    %% Next Phase
+                    USERS ||--o{ CHAT_SESSIONS : owns
+                    USERS ||--o{ DOCUMENTS : uploads
+                    USERS ||--o{ USER_ROLES : has
+                    ROLES ||--o{ USER_ROLES : assigned
+                    
+                    USERS {
+                        uuid id PK
+                        string username
+                        string email
+                        string password_hash
+                        boolean is_active
+                        datetime created_at
+                    }
+                    
+                    ROLES {
+                        uuid id PK
+                        string name
+                        text description
+                    }
+                    
+                    USER_ROLES {
+                        uuid user_id FK
+                        uuid role_id FK
+                    }
+                    
+                    DOCUMENTS {
+                        uuid id PK
+                        string filename
+                        string file_path
+                        uuid uploaded_by FK
+                        datetime created_at
+                    }
+                    
+                    COLLECTIONS ||--o{ DOCUMENTS : contains
+                    COLLECTIONS {
+                        uuid id PK
+                        string name
+                        text description
+                        uuid created_by FK
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 Quick Start Commands</h2>
+            <div style="background: #2d3748; color: #e2e8f0; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace;">
+                <div># Navigate to project directory</div>
+                <div>cd /Users/chenbingxu/Documents/Projects/Capstone/rag/inference-service/backend</div>
+                <br>
+                <div># Backup current database</div>
+                <div>pg_dump chatdb > backup_$(date +%Y%m%d_%H%M%S).sql</div>
+                <br>
+                <div># Create migration files</div>
+                <div>mkdir -p migrations</div>
+                <div>touch migrations/001_user_management.sql</div>
+                <br>
+                <div># Run database utilities</div>
+                <div>python db_utils.py create</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#4299e1',
+                primaryTextColor: '#2d3748',
+                primaryBorderColor: '#4299e1',
+                lineColor: '#a0aec0',
+                sectionBkgColor: '#f7fafc',
+                altSectionBkgColor: '#edf2f7',
+                gridColor: '#e2e8f0',
+                secondaryColor: '#ed8936',
+                tertiaryColor: '#48bb78'
+            }
+        });
+    </script>
+</body>
+</html>

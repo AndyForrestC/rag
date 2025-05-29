@@ -25,7 +25,7 @@ This document provides a comprehensive analysis of the 32 use cases defined in t
 
 ### Package 1: Knowledge Query & Chat (7 Use Cases)
 
-#### UC1: Ask Questions ✅ **IMPLEMENTED**
+#### UC1: Ask Questions 
 - **Actor**: End User
 - **Description**: Users submit natural language questions to the RAG system
 - **Current Status**: Core functionality operational in inference service
